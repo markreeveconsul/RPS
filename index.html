@@ -1,10 +1,782 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#122438"><title>Rock Papers Rumble</title><meta name="description" content="A pocket-sized pixel battle. Rock, paper, scissors. 100 HP. Make your move."><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23122438' d='M0 0h32v32H0z'/%3E%3Cpath fill='%23ffbd66' d='M16 4h8v8h-4v4h-4v4h-4v8H8V16h4v-4h4z'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"></head><body>
-<main class="game" aria-label="Rock Papers Rumble game">
-<header class="masthead"><span class="edition">1 PLAYER<br>VS COMPUTER</span><div class="logo"><h1><span>ROCK PAPERS</span>RUMBLE</h1></div><button id="rules" class="utility" aria-label="How to play">HOW TO<br>PLAY <span>?</span></button></header>
-<div class="match-score" aria-label="Match wins this session"><span>MATCH WINS</span><div><span class="score-you">YOU <b id="player-score">0</b></span><span aria-hidden="true">:</span><span class="score-cpu"><b id="computer-score">0</b> CPU</span></div></div>
-<section class="arena" aria-label="Battle board"><div class="hud"><div class="health player"><div class="name-line"><strong>YOU</strong><span><b id="player-hp">100</b> HP</span></div><div id="player-meter" class="meter" role="progressbar" aria-label="Your health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="player-fill"></div></div></div><div class="round-box"><span>ROUND</span><b id="round">01</b></div><div class="health computer"><div class="name-line"><strong>CPU</strong><span><b id="computer-hp">100</b> HP</span></div><div id="computer-meter" class="meter" role="progressbar" aria-label="Computer health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="computer-fill"></div></div></div></div>
-<div class="stage"><div id="callout" class="callout" aria-hidden="true"><strong>READY?</strong></div><div class="hands"><div id="player-fighter" class="hand-bay player"><span class="bay-label">1P</span><img id="player-hand" src="assets/rock.png" alt="Your hand: rock" class="hand" draggable="false"><span id="player-damage" class="damage" aria-hidden="true"></span><strong id="player-move" class="move-label">READY</strong></div><div class="versus" aria-hidden="true">VS</div><div id="computer-fighter" class="hand-bay computer"><span class="bay-label">CPU</span><img id="computer-hand" src="assets/rock.png" alt="Computer hand: rock" class="hand" draggable="false"><span id="computer-damage" class="damage" aria-hidden="true"></span><strong id="computer-move" class="move-label">READY</strong></div></div><div id="endgame" class="endgame" hidden><span id="end-title">YOU WIN!</span><p id="end-detail"></p><button id="again" class="pixel-button">REMATCH</button></div></div>
-<div class="status" aria-live="polite" aria-atomic="true"><strong id="result">PICK YOUR MOVE</strong><span id="detail">Win a throw to deal 20 damage.</span></div></section>
-<section class="controls" aria-label="Choose your move"><div class="control-heading"><span>SELECT</span><span>CLICK OR PRESS 1 / 2 / 3</span></div><div class="choices"><button class="choice rock" data-move="rock"><kbd>1</kbd><img src="assets/rock.png" alt="" draggable="false"><strong>ROCK</strong><small>Crushes scissors</small></button><button class="choice paper" data-move="paper"><kbd>2</kbd><img src="assets/paper.png" alt="" draggable="false"><strong>PAPER</strong><small>Covers rock</small></button><button class="choice scissors" data-move="scissors"><kbd>3</kbd><img src="assets/scissors.png" alt="" draggable="false"><strong>SCISSORS</strong><small>Cuts paper</small></button></div></section>
-<footer><span>100 HP · 20 DAMAGE · NO DAMAGE ON TIES</span><div><button id="sound" aria-pressed="false">SOUND: OFF</button><button id="restart">RESTART ↺</button></div></footer></main>
-<dialog id="dialog" aria-labelledby="rules-title"><button id="close" aria-label="Close instructions">×</button><h2 id="rules-title">HOW TO PLAY</h2><p>Both sides start with <b>100 HP</b>. Each winning throw deals <b>20 damage</b>. Ties deal no damage. Take the computer to zero to win.</p><ul><li>Rock crushes scissors.</li><li>Paper covers rock.</li><li>Scissors cut paper.</li></ul><p>Click a hand or press <b>1, 2, 3</b>. The computer picks randomly before you choose. All feedback is visible, so sound is optional. Match wins carry across rematches until you refresh or close the page. Restarting an unfinished match does not change the score.</p><button id="got-it" class="pixel-button">GOT IT!</button></dialog><script src="game.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROCK PAPER RUMBLE: ARCADE EDITION</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Press Start 2P & VT323 for authentic arcade pixel aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom Arcade Styles & Design Tokens */
+        :root {
+            --arcade-font: 'Press Start 2P', monospace;
+            --vt-font: 'VT323', monospace;
+            --neon-cyan: #00ffff;
+            --neon-magenta: #ff007f;
+            --neon-yellow: #ffff00;
+            --neon-green: #39ff14;
+        }
+
+        body {
+            font-family: var(--arcade-font);
+            background-color: #050508;
+            color: #ffffff;
+            user-select: none;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ----------------------------------------------------
+           CRT SCANLINES, CURVED BEZEL & PHOSPHOR GLOW
+        ---------------------------------------------------- */
+        .crt-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 50px rgba(0, 255, 255, 0.25),
+                inset 0 0 100px rgba(0, 0, 0, 0.95);
+        }
+
+        /* Heavy CRT Lines */
+        .crt-scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 40;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.65) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 6px 100%;
+            opacity: 0.9;
+        }
+
+        /* Phosphor Flicker */
+        @keyframes crtFlicker {
+            0% { opacity: 0.97; }
+            50% { opacity: 1; }
+            52% { opacity: 0.92; }
+            54% { opacity: 1; }
+            80% { opacity: 0.96; }
+            100% { opacity: 0.98; }
+        }
+
+        .crt-flicker {
+            animation: crtFlicker 0.15s infinite;
+        }
+
+        /* CRT Vignette / Curved Screen Glass Shadow */
+        .crt-vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 41;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+        }
+
+        /* Glow Text Effect */
+        .glow-cyan {
+            text-shadow: 0 0 8px var(--neon-cyan), 0 0 16px var(--neon-cyan);
+        }
+        
+        /* Ultra-Enhanced Multi-Stage Neon Glow Effects */
+        @keyframes neonGlowPulse {
+            0%, 100% {
+                text-shadow: 
+                    0 0 5px #fff,
+                    0 0 10px #ffff00,
+                    0 0 20px #ff007f,
+                    0 0 30px #ff007f,
+                    0 0 40px #ff007f,
+                    0 0 55px #ff007f,
+                    0 0 75px #ff007f;
+            }
+            50% {
+                text-shadow: 
+                    0 0 2px #fff,
+                    0 0 6px #ffff00,
+                    0 0 12px #ff007f,
+                    0 0 22px #ff007f,
+                    0 0 32px #ff007f,
+                    0 0 42px #ff007f,
+                    0 0 55px #ff007f;
+            }
+        }
+
+        .glow-neon-ultra {
+            animation: neonGlowPulse 2s ease-in-out infinite alternate;
+        }
+
+        .glow-masthead-neon {
+            text-shadow: 
+                0 0 4px #ffffff,
+                0 0 10px #ffbd66,
+                0 0 20px #ff9900,
+                0 0 35px #ff5500,
+                0 0 50px #ff2200;
+        }
+
+        /* CRT OFF State Override */
+        .crt-off .crt-scanlines,
+        .crt-off .crt-vignette {
+            display: none !important;
+        }
+        .crt-off.crt-flicker {
+            animation: none !important;
+        }
+        .crt-off.crt-container {
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8) !important;
+            border-color: #1e293b !important;
+        }
+
+        /* Arcady Button Effects */
+        .arcade-btn {
+            position: relative;
+            transition: all 0.1s ease;
+            box-shadow: 0 6px 0 #111, 0 10px 15px rgba(0, 0, 0, 0.8);
+            image-rendering: pixelated;
+        }
+
+        .arcade-btn:active, .arcade-btn.pressed {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #111, 0 4px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        /* SVG Pixel Art Rendering */
+        svg.pixel-art {
+            image-rendering: pixelated;
+            filter: drop-shadow(0px 8px 0px rgba(0, 0, 0, 0.5));
+        }
+
+        /* Screen Shake Animation */
+        @keyframes shake {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-10px, 8px); }
+            40% { transform: translate(10px, -8px); }
+            60% { transform: translate(-8px, -5px); }
+            80% { transform: translate(8px, 5px); }
+            100% { transform: translate(0, 0); }
+        }
+        .shake-active {
+            animation: shake 0.35s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Pulse Animation for Press Start */
+        @keyframes pulseBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.1; }
+        }
+        .blink-fast {
+            animation: pulseBlink 0.8s infinite;
+        }
+
+        /* Hit Spark particles overlay */
+        .spark {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-yellow);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 50;
+            box-shadow: 0 0 10px var(--neon-yellow), 0 0 20px #ff3300;
+            animation: sparkFade 0.4s ease-out forwards;
+        }
+
+        @keyframes sparkFade {
+            0% { transform: scale(1) translate(0, 0); opacity: 1; }
+            100% { transform: scale(0) translate(var(--dx), var(--dy)); opacity: 0; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-magenta);
+            border-radius: 4px;
+        }
+
+        /* Preserve SIGNAL's original hand sprites without stretching their proportions. */
+        img.signal-hand {
+            object-fit: contain;
+            image-rendering: pixelated;
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 md:p-6 bg-slate-950 text-white">
+
+    <!-- MAIN ARCADE CABINET FRAME -->
+    <div class="w-full max-w-4xl bg-slate-900 border-4 md:border-8 border-slate-800 rounded-3xl p-3 md:p-6 shadow-2xl relative crt-container crt-flicker my-auto">
+        
+        <!-- CRT Screen FX Layers -->
+        <div class="crt-scanlines"></div>
+        <div class="crt-vignette"></div>
+
+        <!-- TOP MARQUEE / HEADER -->
+        <header class="relative z-10 flex flex-wrap items-center justify-between border-b-4 border-cyan-500/40 pb-3 mb-4 bg-slate-950/80 p-3 rounded-xl">
+            <div class="flex items-center space-x-2">
+                <span class="inline-block w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+                <span class="text-xs md:text-sm text-cyan-400 tracking-wider">STAGE <span id="round-display" class="text-yellow-400">1</span></span>
+            </div>
+
+            <!-- Arcade Marquee Title -->
+            <div class="text-center">
+                <h1 class="text-xs sm:text-base md:text-xl font-bold text-yellow-300 tracking-widest glow-masthead-neon">
+                    ROCK PAPERS RUMBLE
+                </h1>
+                <div class="text-[9px] md:text-xs text-cyan-300 font-mono tracking-widest mt-0.5 glow-cyan">ARCADE EDITION</div>
+            </div>
+
+            <!-- Credits & Sound Toggle -->
+            <div class="flex items-center space-x-3 text-xs">
+                <button id="crt-btn" onclick="toggleCRT()" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 px-2.5 py-1 rounded border border-cyan-400/40 transition text-[10px] md:text-xs">
+                    📺 CRT: ON
+                </button>
+                <button id="sound-btn" onclick="toggleAudio()" class="bg-slate-800 hover:bg-slate-700 text-yellow-400 px-2.5 py-1 rounded border border-yellow-400/40 transition text-[10px] md:text-xs">
+                    🔊 SFX: ON
+                </button>
+                <div class="text-pink-500 font-mono text-[10px] md:text-xs animate-pulse">
+                    CREDITS <span id="credits-count">01</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- TITLE SCREEN OVERLAY -->
+        <div id="title-screen" class="absolute inset-0 z-30 bg-slate-950/95 flex flex-col items-center justify-between p-6 md:p-10 text-center rounded-2xl border-4 border-cyan-500/30">
+            <!-- Top Arcade Banner -->
+            <div class="w-full flex justify-between items-center text-[10px] md:text-xs text-cyan-400 font-mono">
+                <div>HIGH SCORE: <span class="text-yellow-400">99900</span></div>
+                <div class="animate-pulse text-pink-500">INSERT COIN</div>
+            </div>
+
+            <!-- Dynamic Arcade Logo -->
+            <div class="my-auto py-6">
+                <div class="text-3xl sm:text-5xl md:text-6xl font-black text-yellow-300 glow-neon-ultra mb-2 tracking-tighter leading-tight transform -rotate-1">
+                    ROCK PAPERS<br>RUMBLE
+                </div>
+                <div class="text-sm md:text-xl text-cyan-300 tracking-widest glow-cyan font-bold italic">
+                    ★ TURBO FIGHTER II ★
+                </div>
+
+                <!-- Showcase Original Hand Model Icons -->
+                <div class="flex justify-center items-center space-x-6 my-8">
+                    <!-- Rock Demo -->
+                    <div class="w-14 h-14 md:w-20 md:h-20 bg-slate-900 border-2 border-cyan-400 rounded-xl p-2 flex items-center justify-center transform -rotate-6 shadow-lg shadow-cyan-500/20">
+                        <img src="assets/rock.png" class="w-full h-full pixel-art signal-hand" alt="Rock hand" draggable="false">
+                    </div>
+                    <span class="text-pink-500 font-bold text-xl">VS</span>
+                    <!-- Paper Demo -->
+                    <div class="w-14 h-14 md:w-20 md:h-20 bg-slate-900 border-2 border-pink-500 rounded-xl p-2 flex items-center justify-center transform rotate-6 shadow-lg shadow-pink-500/20">
+                        <img src="assets/paper.png" class="w-full h-full pixel-art signal-hand" alt="Paper hand" draggable="false">
+                    </div>
+                    <span class="text-yellow-400 font-bold text-xl">VS</span>
+                    <!-- Scissors Demo -->
+                    <div class="w-14 h-14 md:w-20 md:h-20 bg-slate-900 border-2 border-yellow-400 rounded-xl p-2 flex items-center justify-center transform -rotate-6 shadow-lg shadow-yellow-500/20">
+                        <img src="assets/scissors.png" class="w-full h-full pixel-art signal-hand" alt="Scissors hand" draggable="false">
+                    </div>
+                </div>
+
+                <!-- Pulsating Start CTA Button -->
+                <button onclick="startGame()" class="arcade-btn bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-black font-black text-sm md:text-xl px-8 py-4 rounded-xl border-2 border-white glow-yellow blink-fast hover:scale-105 active:scale-95 transition cursor-pointer">
+                    PRESS START / P1
+                </button>
+            </div>
+
+            <!-- Instructions Footer -->
+            <div class="text-[10px] md:text-xs text-slate-400 font-mono">
+                PRESS <span class="text-yellow-400">[1] ROCK</span> • <span class="text-pink-400">[2] PAPER</span> • <span class="text-cyan-400">[3] SCISSORS</span>
+            </div>
+        </div>
+
+        <!-- MAIN BATTLE STAGE -->
+        <main id="game-stage" class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 my-2 md:my-4">
+            
+            <!-- PLAYER 1 FIGHTER CARD -->
+            <div id="p1-card" class="bg-slate-950/80 border-2 border-cyan-500/60 rounded-2xl p-4 flex flex-col items-center relative overflow-hidden transition-all duration-200">
+                <!-- Header Status -->
+                <div class="w-full flex justify-between items-center mb-2">
+                    <span class="text-xs text-cyan-400 font-bold tracking-wider">1P: PLAYER</span>
+                    <span id="p1-score" class="text-xs text-yellow-400 font-mono">WINS: 0</span>
+                </div>
+
+                <!-- Health Bar -->
+                <div class="w-full bg-slate-800 h-6 rounded-lg border-2 border-slate-700 p-0.5 relative mb-4">
+                    <div id="p1-hp-bar" class="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-md transition-all duration-300 w-full"></div>
+                    <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-mono font-bold text-white drop-shadow-md">
+                        100 / 100 HP
+                    </span>
+                </div>
+
+                <!-- Hand Model Viewport (Original SIGNAL Hand Display) -->
+                <div class="w-36 h-36 md:w-48 md:h-48 bg-slate-900/90 border-2 border-cyan-500/40 rounded-2xl flex items-center justify-center relative p-4 my-2 shadow-inner">
+                    <div id="p1-hand-icon" class="w-full h-full flex items-center justify-center transition-all duration-200">
+                        <!-- Original SIGNAL Rock Hand -->
+                        <img src="assets/rock.png" class="w-24 h-24 text-cyan-400 pixel-art signal-hand" alt="Rock hand" draggable="false">
+                    </div>
+                    <span id="p1-move-label" class="absolute bottom-2 text-[10px] md:text-xs text-cyan-300 bg-slate-950/80 px-2 py-0.5 rounded border border-cyan-500/40 font-mono">
+                        READY
+                    </span>
+                </div>
+            </div>
+
+            <!-- CPU FIGHTER CARD -->
+            <div id="cpu-card" class="bg-slate-950/80 border-2 border-pink-500/60 rounded-2xl p-4 flex flex-col items-center relative overflow-hidden transition-all duration-200">
+                <!-- Header Status -->
+                <div class="w-full flex justify-between items-center mb-2">
+                    <span class="text-xs text-pink-400 font-bold tracking-wider">2P: CPU AGENT</span>
+                    <span id="cpu-score" class="text-xs text-yellow-400 font-mono">WINS: 0</span>
+                </div>
+
+                <!-- Health Bar -->
+                <div class="w-full bg-slate-800 h-6 rounded-lg border-2 border-slate-700 p-0.5 relative mb-4">
+                    <div id="cpu-hp-bar" class="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-md transition-all duration-300 w-full"></div>
+                    <span id="cpu-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs font-mono font-bold text-white drop-shadow-md">
+                        100 / 100 HP
+                    </span>
+                </div>
+
+                <!-- Hand Model Viewport -->
+                <div class="w-36 h-36 md:w-48 md:h-48 bg-slate-900/90 border-2 border-pink-500/40 rounded-2xl flex items-center justify-center relative p-4 my-2 shadow-inner">
+                    <div id="cpu-hand-icon" class="w-full h-full flex items-center justify-center transition-all duration-200">
+                        <!-- Original SIGNAL Rock Hand -->
+                        <img src="assets/rock.png" class="w-24 h-24 text-pink-500 pixel-art signal-hand" alt="Rock hand" draggable="false">
+                    </div>
+                    <span id="cpu-move-label" class="absolute bottom-2 text-[10px] md:text-xs text-pink-300 bg-slate-950/80 px-2 py-0.5 rounded border border-pink-500/40 font-mono">
+                        WAITING
+                    </span>
+                </div>
+            </div>
+        </main>
+
+        <!-- CENTER ANNOUNCER / BANNER -->
+        <div class="relative z-10 text-center my-3 min-h-[48px] flex items-center justify-center">
+            <div id="announcer-text" class="text-xs md:text-base font-bold text-yellow-300 bg-slate-950/90 px-4 py-2 rounded-xl border border-yellow-500/30 glow-yellow transition-all">
+                SELECT YOUR ATTACK TO FIGHT!
+            </div>
+        </div>
+
+        <!-- ARCADE ACTION BUTTON CONTROLS -->
+        <footer class="relative z-10 grid grid-cols-3 gap-2 md:gap-4 mt-2">
+            <!-- ROCK BUTTON -->
+            <button id="btn-rock" onclick="playTurn('rock')" class="arcade-btn bg-slate-800 hover:bg-slate-700 border-2 border-cyan-400 p-2 md:p-4 rounded-xl flex flex-col items-center justify-center group">
+                <div class="w-10 h-10 md:w-14 md:h-14 mb-1 group-hover:scale-110 transition-transform">
+                    <img src="assets/rock.png" class="w-full h-full pixel-art signal-hand" alt="Rock hand" draggable="false">
+                </div>
+                <span class="text-[10px] md:text-xs font-bold text-cyan-400">ROCK [1]</span>
+            </button>
+
+            <!-- PAPER BUTTON -->
+            <button id="btn-paper" onclick="playTurn('paper')" class="arcade-btn bg-slate-800 hover:bg-slate-700 border-2 border-pink-500 p-2 md:p-4 rounded-xl flex flex-col items-center justify-center group">
+                <div class="w-10 h-10 md:w-14 md:h-14 mb-1 group-hover:scale-110 transition-transform">
+                    <img src="assets/paper.png" class="w-full h-full pixel-art signal-hand" alt="Paper hand" draggable="false">
+                </div>
+                <span class="text-[10px] md:text-xs font-bold text-pink-400">PAPER [2]</span>
+            </button>
+
+            <!-- SCISSORS BUTTON -->
+            <button id="btn-scissors" onclick="playTurn('scissors')" class="arcade-btn bg-slate-800 hover:bg-slate-700 border-2 border-yellow-400 p-2 md:p-4 rounded-xl flex flex-col items-center justify-center group">
+                <div class="w-10 h-10 md:w-14 md:h-14 mb-1 group-hover:scale-110 transition-transform">
+                    <img src="assets/scissors.png" class="w-full h-full pixel-art signal-hand" alt="Scissors hand" draggable="false">
+                </div>
+                <span class="text-[10px] md:text-xs font-bold text-yellow-400">SCISSORS [3]</span>
+            </button>
+        </footer>
+
+        <!-- BOTTOM TOOLBAR & HOW TO PLAY MODAL BUTTON -->
+        <div class="relative z-10 flex justify-between items-center mt-4 text-[10px] md:text-xs text-slate-400 font-mono">
+            <button onclick="openModal()" class="hover:text-yellow-400 underline transition">
+                📜 HOW TO PLAY / RULES
+            </button>
+            <button onclick="resetGame()" class="hover:text-red-400 underline transition">
+                🔄 RESET MATCH
+            </button>
+        </div>
+    </div>
+
+    <!-- HOW TO PLAY MODAL -->
+    <div id="rules-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border-4 border-cyan-500 rounded-2xl p-6 max-w-md w-full relative text-left">
+            <h2 class="text-sm md:text-lg font-bold text-cyan-400 glow-cyan mb-4 text-center">
+                ARCADE BATTLE RULES
+            </h2>
+            <ul class="space-y-3 text-xs text-slate-200 font-mono">
+                <li class="flex items-start">
+                    <span class="text-yellow-400 mr-2">►</span>
+                    <span>Both fighters start with <strong class="text-cyan-300">100 HP</strong>.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-400 mr-2">►</span>
+                    <span>Winning a hand deals <strong class="text-red-400">20 DAMAGE</strong> to your opponent.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-400 mr-2">►</span>
+                    <span><strong>Rock</strong> smashes <strong>Scissors</strong>, <strong>Scissors</strong> cuts <strong>Paper</strong>, <strong>Paper</strong> covers <strong>Rock</strong>.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-yellow-400 mr-2">►</span>
+                    <span>Ties deal zero damage. Knock out your enemy to progress stages!</span>
+                </li>
+            </ul>
+            <button onclick="closeModal()" class="mt-6 w-full arcade-btn bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2.5 rounded-xl border border-white">
+                GOT IT!
+            </button>
+        </div>
+    </div>
+
+    <!-- AUDIO & GAME LOGIC ENGINE -->
+    <script>
+        /* ----------------------------------------------------
+           1. GAME STATE & CONSTANTS
+        ---------------------------------------------------- */
+        const MAX_HP = 100;
+        const DAMAGE = 20;
+
+        let p1Hp = MAX_HP;
+        let cpuHp = MAX_HP;
+        let p1Wins = 0;
+        let cpuWins = 0;
+        let stage = 1;
+        let soundEnabled = true;
+        let crtEnabled = true;
+        let isBusy = false;
+
+        // Audio Context for Procedural Chiptune SFX
+        let audioCtx = null;
+
+        function toggleCRT() {
+            crtEnabled = !crtEnabled;
+            const container = document.querySelector('.crt-container');
+            const btn = document.getElementById('crt-btn');
+
+            if (crtEnabled) {
+                container.classList.remove('crt-off');
+                btn.innerText = "📺 CRT: ON";
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-cyan-400 px-2.5 py-1 rounded border border-cyan-400/40 transition text-[10px] md:text-xs";
+            } else {
+                container.classList.add('crt-off');
+                btn.innerText = "🖥️ CRT: OFF";
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-400 px-2.5 py-1 rounded border border-slate-600 transition text-[10px] md:text-xs";
+            }
+            if (typeof playSound === 'function') playSound('click');
+        }
+
+        /* ----------------------------------------------------
+           2. ORIGINAL SIGNAL HAND MODELS (PRESERVED PNG ASSETS)
+        ---------------------------------------------------- */
+        const HAND_MODELS = {
+            rock: `
+                <img src="assets/rock.png" class="w-24 h-24 md:w-32 md:h-32 pixel-art transform transition-transform hover:scale-105 signal-hand" alt="Rock hand" draggable="false">
+            `,
+            paper: `
+                <img src="assets/paper.png" class="w-24 h-24 md:w-32 md:h-32 pixel-art transform transition-transform hover:scale-105 signal-hand" alt="Paper hand" draggable="false">
+            `,
+            scissors: `
+                <img src="assets/scissors.png" class="w-24 h-24 md:w-32 md:h-32 pixel-art transform transition-transform hover:scale-105 signal-hand" alt="Scissors hand" draggable="false">
+            `
+        };
+
+        /* ----------------------------------------------------
+           3. PROCEDURAL CHIPTUNE SOUND ENGINE (WEB AUDIO API)
+        ---------------------------------------------------- */
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'start') {
+                // Intro Start melody
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'click') {
+                // Button click blip
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'hit') {
+                // Damage hit explosion sound
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'tie') {
+                // Tie draw sound
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.setValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'ko') {
+                // Victory fan-fare
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(523, now + 0.15);
+                osc.frequency.setValueAtTime(659, now + 0.3);
+                osc.frequency.setValueAtTime(783, now + 0.45);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                osc.start(now);
+                osc.stop(now + 0.7);
+            }
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').innerText = soundEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+            if (soundEnabled) playSound('click');
+        }
+
+        /* ----------------------------------------------------
+           4. TITLE SCREEN & GAME INITIALIZATION
+        ---------------------------------------------------- */
+        function startGame() {
+            playSound('start');
+            const title = document.getElementById('title-screen');
+            title.classList.add('transition-all', 'duration-500', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                title.style.display = 'none';
+            }, 500);
+        }
+
+        /* ----------------------------------------------------
+           5. COMBAT & GAME LOOP
+        ---------------------------------------------------- */
+        function getRandomMove() {
+            const moves = ['rock', 'paper', 'scissors'];
+            return moves[Math.floor(Math.random() * moves.length)];
+        }
+
+        function playTurn(playerMove) {
+            if (isBusy || p1Hp <= 0 || cpuHp <= 0) return;
+            isBusy = true;
+
+            playSound('click');
+
+            const p1Icon = document.getElementById('p1-hand-icon');
+            const cpuIcon = document.getElementById('cpu-hand-icon');
+            const announcer = document.getElementById('announcer-text');
+
+            // Render Player Choice
+            p1Icon.innerHTML = HAND_MODELS[playerMove];
+            document.getElementById('p1-move-label').innerText = playerMove.toUpperCase();
+
+            // Shuffle Animation for CPU Choice
+            announcer.innerText = "RUMBLE IN PROGRESS...";
+            let shuffleCount = 0;
+            const shuffleInterval = setInterval(() => {
+                const tempMove = getRandomMove();
+                cpuIcon.innerHTML = HAND_MODELS[tempMove];
+                shuffleCount++;
+
+                if (shuffleCount > 6) {
+                    clearInterval(shuffleInterval);
+                    
+                    // Final CPU Move
+                    const cpuMove = getRandomMove();
+                    cpuIcon.innerHTML = HAND_MODELS[cpuMove];
+                    document.getElementById('cpu-move-label').innerText = cpuMove.toUpperCase();
+
+                    // Resolve Outcome
+                    resolveBattle(playerMove, cpuMove);
+                }
+            }, 80);
+        }
+
+        function resolveBattle(p1, cpu) {
+            const announcer = document.getElementById('announcer-text');
+            const container = document.querySelector('.crt-container');
+
+            if (p1 === cpu) {
+                // TIE
+                announcer.innerText = "DRAW! NO DAMAGE DEALT!";
+                playSound('tie');
+            } else if (
+                (p1 === 'rock' && cpu === 'scissors') ||
+                (p1 === 'paper' && cpu === 'rock') ||
+                (p1 === 'scissors' && cpu === 'paper')
+            ) {
+                // PLAYER WINS ROUND
+                cpuHp = Math.max(0, cpuHp - DAMAGE);
+                announcer.innerText = `CRITICAL HIT! ${p1.toUpperCase()} BEATS ${cpu.toUpperCase()}!`;
+                playSound('hit');
+                triggerScreenShake();
+                createSparks(document.getElementById('cpu-card'));
+            } else {
+                // CPU WINS ROUND
+                p1Hp = Math.max(0, p1Hp - DAMAGE);
+                announcer.innerText = `OUCH! ${cpu.toUpperCase()} BEATS ${p1.toUpperCase()}!`;
+                playSound('hit');
+                triggerScreenShake();
+                createSparks(document.getElementById('p1-card'));
+            }
+
+            // Update UI Bars
+            updateHealthBars();
+
+            // Check KO / Match Over
+          setTimeout(() => {
+    if (p1Hp <= 0) {
+        announcer.innerText = "K.O.! CPU WINS THE MATCH!";
+        cpuWins++;
+        document.getElementById('cpu-score').innerText = `WINS: ${cpuWins}`;
+        playSound('ko');
+        saveMatch('loss');          // <-- new
+    } else if (cpuHp <= 0) {
+        announcer.innerText = "K.O.! PLAYER 1 VICTORIOUS!";
+        p1Wins++;
+        stage++;
+        document.getElementById('p1-score').innerText = `WINS: ${p1Wins}`;
+        document.getElementById('round-display').innerText = stage;
+        playSound('ko');
+        saveMatch('win');           // <-- new
+    }
+    isBusy = false;
+}, 400);
+        }
+            function saveMatch(result) {
+    fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: 'Player1',
+            result: result,
+            playerHp: p1Hp,
+            cpuHp: cpuHp,
+            rounds: stage
+        })
+    }).catch(() => {});
+}
+        function updateHealthBars() {
+            const p1Bar = document.getElementById('p1-hp-bar');
+            const cpuBar = document.getElementById('cpu-hp-bar');
+
+            p1Bar.style.width = `${p1Hp}%`;
+            cpuBar.style.width = `${cpuHp}%`;
+
+            document.getElementById('p1-hp-text').innerText = `${p1Hp} / ${MAX_HP} HP`;
+            document.getElementById('cpu-hp-text').innerText = `${cpuHp} / ${MAX_HP} HP`;
+
+            // Dynamic Bar Color based on HP
+            p1Bar.className = `h-full rounded-md transition-all duration-300 ${p1Hp > 50 ? 'bg-gradient-to-r from-green-500 to-emerald-400' : p1Hp > 20 ? 'bg-gradient-to-r from-yellow-500 to-orange-400' : 'bg-gradient-to-r from-red-600 to-pink-600 animate-pulse'}`;
+            cpuBar.className = `h-full rounded-md transition-all duration-300 ${cpuHp > 50 ? 'bg-gradient-to-r from-green-500 to-emerald-400' : cpuHp > 20 ? 'bg-gradient-to-r from-yellow-500 to-orange-400' : 'bg-gradient-to-r from-red-600 to-pink-600 animate-pulse'}`;
+        }
+
+        /* ----------------------------------------------------
+           6. ARCADE JUICE & SPECIAL EFFECTS
+        ---------------------------------------------------- */
+        function triggerScreenShake() {
+            const container = document.querySelector('.crt-container');
+            container.classList.add('shake-active');
+            setTimeout(() => {
+                container.classList.remove('shake-active');
+            }, 350);
+        }
+
+        function createSparks(targetCard) {
+            const rect = targetCard.getBoundingClientRect();
+            const count = 12;
+
+            for (let i = 0; i < count; i++) {
+                const spark = document.createElement('div');
+                spark.className = 'spark';
+                
+                const dx = (Math.random() - 0.5) * 160 + 'px';
+                const dy = (Math.random() - 0.5) * 160 + 'px';
+                spark.style.setProperty('--dx', dx);
+                spark.style.setProperty('--dy', dy);
+
+                spark.style.left = (rect.width / 2) + 'px';
+                spark.style.top = (rect.height / 2) + 'px';
+
+                targetCard.appendChild(spark);
+
+                setTimeout(() => spark.remove(), 400);
+            }
+        }
+
+        function resetGame() {
+            playSound('click');
+            p1Hp = MAX_HP;
+            cpuHp = MAX_HP;
+            updateHealthBars();
+
+            document.getElementById('p1-move-label').innerText = "READY";
+            document.getElementById('cpu-move-label').innerText = "WAITING";
+            document.getElementById('announcer-text').innerText = "ROUND RESET! CHOOSE YOUR ATTACK!";
+            isBusy = false;
+        }
+
+        /* Modal Handlers */
+        function openModal() {
+            playSound('click');
+            document.getElementById('rules-modal').classList.remove('hidden');
+            document.getElementById('rules-modal').classList.add('flex');
+        }
+
+        function closeModal() {
+            playSound('click');
+            document.getElementById('rules-modal').classList.add('hidden');
+            document.getElementById('rules-modal').classList.remove('flex');
+        }
+
+        /* Keyboard Hotkeys (1, 2, 3) */
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '1') playTurn('rock');
+            if (e.key === '2') playTurn('paper');
+            if (e.key === '3') playTurn('scissors');
+        });
+    </script>
+</body>
+</html>
