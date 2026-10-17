@@ -1,0 +1,4 @@
+node_modules/
+server/game.db
+server/game.db-wal
+server/game.db-shm

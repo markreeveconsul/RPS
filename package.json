@@ -1,0 +1,25 @@
+{
+  "name": "signal-rps",
+  "version": "1.0.0",
+  "description": "A compact retro puzzle-style game. No installation or build step required.",
+  "main": "game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markreeveconsul/RPS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/markreeveconsul/RPS/issues"
+  },
+  "homepage": "https://github.com/markreeveconsul/RPS#readme",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.3.0"
+  }
+}
